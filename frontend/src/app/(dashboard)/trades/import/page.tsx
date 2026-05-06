@@ -10,7 +10,7 @@ export default function ImportPage() {
 
   // For simplicity in Phase 1, we use the first available trading account.
   // In a real app, the user would select which account they are importing into.
-  const accountId = trades?.[0]?.accountId || ''
+  const accountId = trades?.pages[0]?.trades[0]?.accountId || ''
 
   return (
     <div className="container max-w-2xl py-12">

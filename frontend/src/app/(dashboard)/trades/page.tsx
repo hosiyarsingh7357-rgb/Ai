@@ -1,3 +1,4 @@
+'use client'
 import { useState, useRef, useEffect } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useTrades } from '@/hooks/useTrades'

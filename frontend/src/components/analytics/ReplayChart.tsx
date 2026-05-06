@@ -16,7 +16,7 @@ interface ReplayChartProps {
   trade?: any;
 }
 
-const ReplayChart: React.FC<ReplayChartProps> = ({ data, trade }) => {
+export const ReplayChart: React.FC<ReplayChartProps> = ({ data, trade }) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
@@ -96,4 +96,4 @@ const ReplayChart: React.FC<ReplayChartProps> = ({ data, trade }) => {
   );
 };
 
-export default ReplayChart;
+

@@ -82,7 +82,14 @@ export function TradeForm({ onSuccess }: { onSuccess?: () => void }) {
         setIsSaving(true)
         await offlineStorage.saveDraft({
           id: 'current-draft',
-          ...formValues,
+          symbol: formValues.symbol,
+          entryPrice: formValues.entryPrice,
+          size: formValues.quantity,
+          side: formValues.direction.toUpperCase() as 'LONG' | 'SHORT',
+          status: 'OPEN',
+          notes: formValues.notes,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         })
         setTimeout(() => setIsSaving(false), 800)
       }

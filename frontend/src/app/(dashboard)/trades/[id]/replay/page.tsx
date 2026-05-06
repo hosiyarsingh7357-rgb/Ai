@@ -3,7 +3,7 @@
 import React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTradeReplay } from '@/hooks/useTradeReplay';
-import ReplayChart from '@/components/analytics/ReplayChart';
+import { ReplayChart } from '@/components/analytics/ReplayChart';
 import { FeatureGate } from '@/components/auth/FeatureGate';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 

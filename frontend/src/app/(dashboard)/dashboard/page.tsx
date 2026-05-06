@@ -4,13 +4,14 @@ import Link from 'next/link'
 import { Card, CardBody } from '@/components/ui/Card'
 import { TrendingUp, TrendingDown, BarChart3, BookOpen, Clock } from 'lucide-react'
 import { PropFirmWidget } from '@/components/dashboard/PropFirmWidget'
-import { useAnalyticsOverview } from '@/hooks/useAnalytics'
+import { useAnalyticsOverview, useEquityCurve } from '@/hooks/useAnalytics'
 import { EquityCurve } from '@/components/charts'
 import { ChartSkeleton } from '@/components/ui/ChartSkeleton'
 import { cn } from '@/lib/utils'
 
 export default function DashboardPage() {
-  const { data: overview, isLoading: loading } = useAnalyticsOverview()
+  const { data: overview, isLoading: loadingOverview } = useAnalyticsOverview()
+  const { data: equityData, isLoading: loadingEquity } = useEquityCurve()
 
   const STATS = [
     {
@@ -73,7 +74,7 @@ export default function DashboardPage() {
                       <p className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-[0.15em] mb-3 opacity-60">
                         {stat.label}
                       </p>
-                      {loading ? (
+                      {loadingOverview ? (
                         <div className="h-8 w-24 skeleton bg-white/5 rounded" />
                       ) : (
                         <>
@@ -121,7 +122,7 @@ export default function DashboardPage() {
               </div>
               <div className="chart-container-md relative">
                 <Suspense fallback={<ChartSkeleton height={300} />}>
-                  <EquityCurve data={overview?.equityData || []} />
+                  <EquityCurve data={equityData || []} />
                 </Suspense>
               </div>
             </CardBody>
