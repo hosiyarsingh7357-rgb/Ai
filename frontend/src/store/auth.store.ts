@@ -1,7 +1,7 @@
-'use client'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { apiClient } from '@/lib/apiClient'
+import Cookies from 'js-cookie'
 
 interface User {
   id: string
@@ -30,14 +30,18 @@ export const useAuthStore = create<AuthState>()(
       isLoading: false,
 
       setAuth: (user, accessToken, refreshToken) => {
-        localStorage.setItem('access_token', accessToken)
-        localStorage.setItem('refresh_token', refreshToken)
+        // Store tokens in Cookies (accessible by server middleware)
+        Cookies.set('access_token', accessToken, { expires: 7, sameSite: 'strict' })
+        Cookies.set('refresh_token', refreshToken, { expires: 30, sameSite: 'strict' })
+        
         set({ user, accessToken, refreshToken })
       },
 
       logout: () => {
-        localStorage.removeItem('access_token')
-        localStorage.removeItem('refresh_token')
+        // Clear cookies
+        Cookies.remove('access_token')
+        Cookies.remove('refresh_token')
+        
         set({ user: null, accessToken: null, refreshToken: null })
         apiClient.post('/auth/logout').catch(() => {})
       },
@@ -46,8 +50,7 @@ export const useAuthStore = create<AuthState>()(
       name: 'auth-store',
       partialize: (state) => ({
         user: state.user,
-        accessToken: state.accessToken,
-        refreshToken: state.refreshToken,
+        // Don't persist tokens in localStorage via Zustand
       }),
     }
   )
