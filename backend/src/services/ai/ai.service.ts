@@ -215,6 +215,143 @@ export class AIService {
 
     return text;
   }
+
+  async *generateCoachResponseStream(userId: string, userMessage: string, history: any[] = []) {
+    const user = await prisma.user.findUnique({ 
+      where: { id: userId },
+      include: { tradingAccounts: true }
+    });
+    
+    if (!user) throw new Error('User not found');
+    if (user.subscriptionTier !== 'elite') {
+       throw new Error('AI Coach Chat is an Elite-only feature.');
+    }
+
+    const recentTrades = await prisma.trade.findMany({
+      where: { userId, status: 'closed' },
+      orderBy: { exitDate: 'desc' },
+      take: 30,
+      select: {
+        symbol: true,
+        direction: true,
+        netPnl: true,
+        setupType: true,
+        mistakes: true,
+        notes: true,
+        rating: true
+      }
+    });
+
+    const tradeContext = recentTrades.map(t => ({
+      sym: t.symbol,
+      dir: t.direction,
+      pnl: t.netPnl,
+      setup: t.setupType,
+      mistakes: t.mistakes,
+      rating: t.rating,
+      notes: t.notes?.substring(0, 100)
+    }));
+
+    const systemPrompt = `
+      You are the "EdgeLog Nexus AI Coach", a top-tier trading performance psychologist and quantitative analyst. 
+      Help the trader find their "Edge".
+      TRADER PROFILE: ${user.name}, Experience: ${user.tradingExperience}
+      RECENT PERFORMANCE: ${JSON.stringify(tradeContext)}
+    `;
+
+    const chat = proModel.startChat({
+      history: [
+        { role: 'user', parts: [{ text: systemPrompt }] },
+        { role: 'model', parts: [{ text: "Understood. I am your AI Coach. How can I assist you?" }] },
+        ...history
+      ]
+    });
+
+    const result = await chat.sendMessageStream(userMessage);
+    for await (const chunk of result.stream) {
+      const text = chunk.text();
+      yield text;
+    }
+  }
+
+  async getBehavioralInsights(userId: string) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new Error('User not found');
+
+    const trades = await prisma.trade.findMany({
+      where: { userId, status: 'closed' },
+      take: 100,
+      select: {
+        mistakes: true,
+        notes: true,
+        rating: true,
+        netPnl: true,
+        symbol: true
+      }
+    });
+
+    if (trades.length < 5) {
+      return { status: 'insufficient_data', message: 'Need at least 5 closed trades for behavioral analysis.' };
+    }
+
+    const model = this.getModel(user.subscriptionTier);
+    const prompt = `
+      Analyze the following trade behavioral data for a user.
+      DATA: ${JSON.stringify(trades)}
+      
+      TASK:
+      1. Identify the top 3 recurring behavioral mistakes.
+      2. Analyze the relationship between "notes" (psychology) and "netPnl" (results).
+      3. Provide a "Mindset Score" (1-10).
+      4. Suggest a specific behavioral drill to fix the #1 mistake.
+      
+      Respond in valid JSON format only with keys: "topMistakes" (array), "psychologicalCorrelation" (string), "mindsetScore" (number), "suggestedDrill" (string).
+    `;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    return JSON.parse(response.text().replace(/```json|```/g, '').trim());
+  }
+
+  async patternScan(userId: string) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new Error('User not found');
+
+    const trades = await prisma.trade.findMany({
+      where: { userId, status: 'closed' },
+      take: 200,
+      select: {
+        symbol: true,
+        direction: true,
+        setupType: true,
+        netPnl: true,
+        entryDate: true,
+        exitDate: true
+      }
+    });
+
+    if (trades.length < 10) {
+      return { status: 'insufficient_data', message: 'Need at least 10 closed trades for pattern scanning.' };
+    }
+
+    const model = this.getModel(user.subscriptionTier);
+    const prompt = `
+      Scan these trades for hidden performance patterns.
+      DATA: ${JSON.stringify(trades)}
+      
+      TASK:
+      1. Find the most profitable 'Symbol + Direction' combo.
+      2. Find the setup type with the highest win rate but lowest P&L (if any).
+      3. Identify 'Toxic Timeframes' (days or hours where losses are frequent).
+      4. Suggest a "Niche Alpha" (e.g., "You are 80% profitable on EURUSD Longs between 2PM-4PM").
+      
+      Respond in valid JSON format only with keys: "bestCombo" (string), "setupEfficiency" (string), "toxicPatterns" (array), "nicheAlpha" (string).
+    `;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    return JSON.parse(response.text().replace(/```json|```/g, '').trim());
+  }
 }
 
 export const aiService = new AIService();

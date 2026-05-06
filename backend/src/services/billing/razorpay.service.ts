@@ -186,6 +186,18 @@ export class RazorpayService {
       },
     });
   }
+
+  async getPortalUrl(userId: string) {
+    // For Razorpay, we redirect to the local billing settings or 
+    // a hosted page if using a different provider in the future.
+    return `${env.FRONTEND_URL}/dashboard/settings/billing`;
+  }
+
+  async getSubscriptionStatus(userId: string) {
+    return prisma.subscription.findUnique({
+      where: { userId }
+    });
+  }
 }
 
 export const razorpayService = new RazorpayService();

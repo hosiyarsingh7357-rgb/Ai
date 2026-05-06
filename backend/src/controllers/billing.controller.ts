@@ -28,3 +28,15 @@ export const handleWebhook = asyncHandler(async (req: Request, res: Response) =>
   const result = await razorpayService.handleWebhook(req.body, signature);
   res.status(200).json(result);
 });
+
+export const getPortalUrl = asyncHandler(async (req: Request, res: Response) => {
+  const userId = (req as any).user.id;
+  const url = await razorpayService.getPortalUrl(userId);
+  res.status(200).json({ url });
+});
+
+export const getStatus = asyncHandler(async (req: Request, res: Response) => {
+  const userId = (req as any).user.id;
+  const status = await razorpayService.getSubscriptionStatus(userId);
+  res.status(200).json(status);
+});

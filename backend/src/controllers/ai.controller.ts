@@ -50,6 +50,27 @@ export const coachChat = asyncHandler(async (req: Request, res: Response) => {
   res.status(200).json({ response });
 });
 
+export const coachChatStream = asyncHandler(async (req: Request, res: Response) => {
+  const userId = (req as any).user.id;
+  const { message, history } = req.body;
+
+  if (!message) {
+    res.status(400).json({ message: 'Message is required' });
+    return;
+  }
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+
+  const stream = aiService.generateCoachResponseStream(userId, message, history);
+  for await (const chunk of stream) {
+    res.write(`data: ${JSON.stringify({ text: chunk })}\n\n`);
+  }
+  res.write('data: [DONE]\n\n');
+  res.end();
+});
+
 export const getTradeReplay = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params as { id: string };
   const data = await replayService.generateSimulationData(id);
@@ -59,4 +80,16 @@ export const getTradeReplay = asyncHandler(async (req: Request, res: Response) =
     ...data,
     insights
   });
+});
+
+export const getBehavioralInsights = asyncHandler(async (req: Request, res: Response) => {
+  const userId = (req as any).user.id;
+  const insights = await aiService.getBehavioralInsights(userId);
+  res.status(200).json(insights);
+});
+
+export const patternScan = asyncHandler(async (req: Request, res: Response) => {
+  const userId = (req as any).user.id;
+  const patterns = await aiService.patternScan(userId);
+  res.status(200).json(patterns);
 });
