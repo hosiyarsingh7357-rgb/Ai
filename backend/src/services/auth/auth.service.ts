@@ -1,7 +1,8 @@
 import prisma from '../../config/database.js'
 import { hashPassword, comparePassword } from './password.service.js'
-import { signAccessToken, signRefreshToken, verifyRefreshToken } from './jwt.service.js'
+import { signAccessToken, signRefreshToken, verifyRefreshToken, signResetToken, verifyResetToken } from './jwt.service.js'
 import { ApiError } from '../../utils/ApiError.js'
+import { sendPasswordResetEmail } from '../../utils/email.js'
 import type { RegisterInput, LoginInput } from '../../validations/auth.validation.js'
 import type { User } from '@prisma/client'
 
@@ -111,6 +112,33 @@ export async function completeOnboarding(
   })
 
   return sanitizeUser(user)
+}
+
+export async function forgotPassword(email: string): Promise<void> {
+  const user = await prisma.user.findUnique({ where: { email } })
+  
+  // Security best practice: don't reveal if user exists. 
+  // Just log it and send email only if user exists.
+  if (user) {
+    const token = signResetToken(user.id, user.email)
+    await sendPasswordResetEmail(user.email, token)
+  }
+}
+
+export async function resetPassword(token: string, newPassword: string): Promise<void> {
+  let payload: any
+  try {
+    payload = verifyResetToken(token)
+  } catch {
+    throw ApiError.unauthorized('Invalid or expired reset token')
+  }
+
+  const passwordHash = await hashPassword(newPassword)
+  
+  await prisma.user.update({
+    where: { id: payload.sub },
+    data: { passwordHash },
+  })
 }
 
 function generateTokens(user: User): Omit<AuthTokens, 'user'> {

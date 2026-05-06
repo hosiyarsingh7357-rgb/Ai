@@ -7,6 +7,8 @@ import {
   loginSchema,
   refreshTokenSchema,
   onboardingSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
 } from '../validations/auth.validation.js'
 
 import { loginRateLimiter } from '../middleware/rateLimiter.middleware.js'
@@ -35,5 +37,11 @@ router.post(
   validate(onboardingSchema),
   authController.completeOnboarding
 )
+
+// POST /v1/auth/forgot-password
+router.post('/forgot-password', validate(forgotPasswordSchema), authController.forgotPassword)
+
+// POST /v1/auth/reset-password
+router.post('/reset-password', validate(resetPasswordSchema), authController.resetPassword)
 
 export default router

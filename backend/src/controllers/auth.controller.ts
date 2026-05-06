@@ -34,3 +34,13 @@ export const completeOnboarding = asyncHandler(async (req: Request, res: Respons
   const result = await authService.completeOnboarding(userId, req.body)
   ApiResponse.success(res, result)
 })
+
+export const forgotPassword = asyncHandler(async (req: Request, res: Response) => {
+  await authService.forgotPassword(req.body.email)
+  ApiResponse.message(res, 'If an account exists with that email, a reset link has been sent.')
+})
+
+export const resetPassword = asyncHandler(async (req: Request, res: Response) => {
+  await authService.resetPassword(req.body.token, req.body.password)
+  ApiResponse.message(res, 'Password has been reset successfully.')
+})

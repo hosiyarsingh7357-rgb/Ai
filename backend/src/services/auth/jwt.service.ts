@@ -12,6 +12,12 @@ export interface RefreshTokenPayload {
   type: 'refresh'
 }
 
+export interface ResetTokenPayload {
+  sub: string
+  email: string
+  type: 'reset'
+}
+
 export function signAccessToken(payload: AccessTokenPayload): string {
   return jwt.sign(payload, env.JWT_ACCESS_SECRET, {
     expiresIn: env.JWT_ACCESS_EXPIRES_IN,
@@ -32,4 +38,20 @@ export function verifyAccessToken(token: string): AccessTokenPayload {
 
 export function verifyRefreshToken(token: string): RefreshTokenPayload {
   return jwt.verify(token, env.JWT_REFRESH_SECRET) as RefreshTokenPayload
+}
+
+export function signResetToken(userId: string, email: string): string {
+  return jwt.sign(
+    { sub: userId, email, type: 'reset' } satisfies ResetTokenPayload,
+    env.JWT_ACCESS_SECRET,
+    { expiresIn: '1h' } as jwt.SignOptions
+  )
+}
+
+export function verifyResetToken(token: string): ResetTokenPayload {
+  const payload = jwt.verify(token, env.JWT_ACCESS_SECRET) as ResetTokenPayload
+  if (payload.type !== 'reset') {
+    throw new Error('Invalid token type')
+  }
+  return payload
 }
