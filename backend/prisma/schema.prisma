@@ -1,0 +1,523 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id                    String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email                 String             @unique @db.VarChar(255)
+  emailVerified         DateTime?          @map("email_verified")
+  name                  String?            @db.VarChar(255)
+  image                 String?
+  passwordHash          String?            @map("password_hash")
+  subscriptionTier      SubscriptionTier   @default(free) @map("subscription_tier")
+  subscriptionExpiresAt DateTime?          @map("subscription_expires_at")
+  timezone              String             @default("UTC") @db.VarChar(64)
+  defaultCurrency       String             @default("USD") @map("default_currency") @db.VarChar(8)
+  onboardingCompleted   Boolean            @default(false) @map("onboarding_completed")
+  tradingExperience     TradingExperience? @map("trading_experience")
+  tradingStyle          TradingStyle?      @map("trading_style")
+  riskPerTrade          Decimal?           @map("risk_per_trade") @db.Decimal(5, 2)
+  primaryAssetClass     PrimaryAssetClass? @map("primary_asset_class")
+  createdAt             DateTime           @default(now()) @map("created_at")
+  updatedAt             DateTime           @updatedAt @map("updated_at")
+  accounts              Account[]
+  aiInsights            AiInsight[]
+  aiReports             AiReport[]
+  backtestSessions      BacktestSession[]
+  brokerConnections     BrokerConnection[]
+  importLogs            ImportLog[]
+  journalNotes          JournalNote[]
+  playbooks             Playbook[]
+  progressGoals         ProgressGoal[]
+  sessions              Session[]
+  subscription          Subscription?
+  tags                  Tag[]
+  trades                Trade[]
+  tradingAccounts       TradingAccount[]
+  userSettings          UserSettings?
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @map("user_id") @db.Uuid
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id") @db.Uuid
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model TradingAccount {
+  id                String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId            String             @map("user_id") @db.Uuid
+  name              String             @db.VarChar(255)
+  broker            String?            @db.VarChar(100)
+  accountType       AccountType        @default(live) @map("account_type")
+  currency          String             @default("USD") @db.VarChar(8)
+  initialBalance    Decimal?           @map("initial_balance") @db.Decimal(18, 2)
+  currentBalance    Decimal?           @map("current_balance") @db.Decimal(18, 2)
+  propFirmName      String?            @map("prop_firm_name") @db.VarChar(255)
+  propFirmRules     Json?              @map("prop_firm_rules")
+  isActive          Boolean            @default(true) @map("is_active")
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @updatedAt @map("updated_at")
+  brokerConnections BrokerConnection[]
+  trades            Trade[]
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("trading_accounts")
+}
+
+model Trade {
+  id                   String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId               String            @map("user_id") @db.Uuid
+  accountId            String            @map("account_id") @db.Uuid
+  symbol               String            @db.VarChar(50)
+  assetClass           AssetClass        @map("asset_class")
+  direction            TradeDirection
+  status               TradeStatus       @default(open)
+  entryDate            DateTime          @map("entry_date")
+  exitDate             DateTime?         @map("exit_date")
+  entryPrice           Decimal           @map("entry_price") @db.Decimal(18, 8)
+  exitPrice            Decimal?          @map("exit_price") @db.Decimal(18, 8)
+  quantity             Decimal           @db.Decimal(18, 8)
+  stopLoss             Decimal?          @map("stop_loss") @db.Decimal(18, 8)
+  takeProfit           Decimal?          @map("take_profit") @db.Decimal(18, 8)
+  grossPnl             Decimal?          @map("gross_pnl") @db.Decimal(18, 2)
+  netPnl               Decimal?          @map("net_pnl") @db.Decimal(18, 2)
+  commission           Decimal           @default(0) @db.Decimal(18, 4)
+  swapFees             Decimal           @default(0) @map("swap_fees") @db.Decimal(18, 4)
+  riskRewardRatio      Decimal?          @map("risk_reward_ratio") @db.Decimal(10, 4)
+  riskAmount           Decimal?          @map("risk_amount") @db.Decimal(18, 2)
+  riskPercent          Decimal?          @map("risk_percent") @db.Decimal(8, 4)
+  setupType            String?           @map("setup_type") @db.VarChar(100)
+  entryReason          String?           @map("entry_reason")
+  exitReason           String?           @map("exit_reason")
+  emotionalStateEntry  EmotionalState?   @map("emotional_state_entry")
+  emotionalStateExit   EmotionalState?   @map("emotional_state_exit")
+  session              MarketSession?
+  dayOfWeek            Int?              @map("day_of_week") @db.SmallInt
+  tradeDurationMinutes Int?              @map("trade_duration_minutes")
+  mae                  Decimal?          @db.Decimal(18, 2)
+  mfe                  Decimal?          @db.Decimal(18, 4)
+  playbookId           String?           @map("playbook_id") @db.Uuid
+  rating               Int?              @db.SmallInt
+  mistakes             String[]
+  rulesFollowed        Boolean?          @map("rules_followed")
+  notes                String?
+  aiAnalysis           Json?             @map("ai_analysis")
+  aiAnalyzedAt         DateTime?         @map("ai_analyzed_at")
+  importSource         String?           @map("import_source") @db.VarChar(50)
+  externalId           String?           @map("external_id") @db.VarChar(255)
+  deletedAt            DateTime?         @map("deleted_at")
+  createdAt            DateTime          @default(now()) @map("created_at")
+  updatedAt            DateTime          @updatedAt @map("updated_at")
+  journalNotes         JournalNote[]
+  legs                 TradeLeg[]
+  screenshots          TradeScreenshot[]
+  tags                 TradeTag[]
+  account              TradingAccount    @relation(fields: [accountId], references: [id])
+  playbook             Playbook?         @relation(fields: [playbookId], references: [id])
+  user                 User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, entryDate(sort: Desc)])
+  @@index([userId, symbol])
+  @@index([userId, assetClass])
+  @@index([userId, dayOfWeek])
+  @@index([userId, emotionalStateEntry])
+  @@index([accountId])
+  @@index([userId, deletedAt])
+  @@index([userId, externalId])
+  @@map("trades")
+}
+
+model TradeLeg {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tradeId    String   @map("trade_id") @db.Uuid
+  legNumber  Int      @map("leg_number")
+  action     String   @db.VarChar(10)
+  quantity   Decimal  @db.Decimal(18, 8)
+  price      Decimal  @db.Decimal(18, 8)
+  executedAt DateTime @map("executed_at")
+  commission Decimal  @default(0) @db.Decimal(18, 4)
+  notes      String?
+  trade      Trade    @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+
+  @@index([tradeId])
+  @@map("trade_legs")
+}
+
+model Tag {
+  id        String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String     @map("user_id") @db.Uuid
+  name      String     @db.VarChar(100)
+  color     String     @default("#6B7280") @db.VarChar(7)
+  category  String?    @db.VarChar(50)
+  createdAt DateTime   @default(now()) @map("created_at")
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trades    TradeTag[]
+
+  @@unique([userId, name])
+  @@index([userId])
+  @@map("tags")
+}
+
+model TradeTag {
+  tradeId   String   @map("trade_id") @db.Uuid
+  tagId     String   @map("tag_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+  tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  trade     Trade    @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+
+  @@id([tradeId, tagId])
+  @@map("trade_tags")
+}
+
+model JournalNote {
+  id           String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String          @map("user_id") @db.Uuid
+  tradeId      String?         @map("trade_id") @db.Uuid
+  date         DateTime        @db.Date
+  content      String
+  mood         EmotionalState?
+  marketBias   String?         @map("market_bias") @db.VarChar(20)
+  searchVector String?         @map("search_vector")
+  createdAt    DateTime        @default(now()) @map("created_at")
+  updatedAt    DateTime        @updatedAt @map("updated_at")
+  trade        Trade?          @relation(fields: [tradeId], references: [id])
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date(sort: Desc)])
+  @@map("journal_notes")
+}
+
+model Playbook {
+  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId           String            @map("user_id") @db.Uuid
+  name             String            @db.VarChar(255)
+  description      String?
+  setupType        String            @map("setup_type") @db.VarChar(100)
+  entryRules       String            @map("entry_rules")
+  exitRules        String            @map("exit_rules")
+  riskRules        String?           @map("risk_rules")
+  markets          String[]
+  timeframes       String[]
+  isActive         Boolean           @default(true) @map("is_active")
+  isPublic         Boolean           @default(false) @map("is_public")
+  isFeatured       Boolean           @default(false) @map("is_featured")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+  backtestSessions BacktestSession[]
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trades           Trade[]
+
+  @@index([userId])
+  @@map("playbooks")
+}
+
+model TradeScreenshot {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tradeId   String   @map("trade_id") @db.Uuid
+  url       String
+  publicId  String   @map("public_id") @db.VarChar(255)
+  caption   String?  @db.VarChar(500)
+  createdAt DateTime @default(now()) @map("created_at")
+  trade     Trade    @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+
+  @@index([tradeId])
+  @@map("trade_screenshots")
+}
+
+model AiInsight {
+  id                  String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId              String      @map("user_id") @db.Uuid
+  insightType         InsightType @map("insight_type")
+  title               String      @db.VarChar(255)
+  content             String
+  structuredData      Json?       @map("structured_data")
+  tradesAnalyzedCount Int?        @map("trades_analyzed_count")
+  periodStart         DateTime?   @map("period_start") @db.Date
+  periodEnd           DateTime?   @map("period_end") @db.Date
+  geminiModel         String      @map("gemini_model") @db.VarChar(100)
+  tokensUsed          Int?        @map("tokens_used")
+  createdAt           DateTime    @default(now()) @map("created_at")
+  user                User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, insightType, createdAt(sort: Desc)])
+  @@map("ai_insights")
+}
+
+model AiReport {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId             String    @map("user_id") @db.Uuid
+  title              String    @db.VarChar(255)
+  periodStart        DateTime  @map("period_start") @db.Date
+  periodEnd          DateTime  @map("period_end") @db.Date
+  weekSummary        String    @map("week_summary")
+  behavioralAlert    String?   @map("behavioral_alert")
+  bestSetup          String?   @map("best_setup")
+  improvementArea    String?   @map("improvement_area")
+  nextWeekFocus      String?   @map("next_week_focus")
+  progressVsLastWeek String?   @map("progress_vs_last_week")
+  fullContent        String    @map("full_content")
+  geminiModel        String    @map("gemini_model") @db.VarChar(100)
+  tokensUsed         Int?      @map("tokens_used")
+  emailSent          Boolean   @default(false) @map("email_sent")
+  emailSentAt        DateTime? @map("email_sent_at")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("ai_reports")
+}
+
+model Subscription {
+  id                     String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId                 String    @unique @map("user_id") @db.Uuid
+  stripeCustomerId       String?   @unique @map("stripe_customer_id")
+  stripeSubscriptionId   String?   @unique @map("stripe_subscription_id")
+  razorpaySubscriptionId String?   @unique @map("razorpay_subscription_id")
+  razorpayPlanId         String?   @map("razorpay_plan_id")
+  status                 String    @default("active") @db.VarChar(50)
+  currentPeriodStart     DateTime? @map("current_period_start")
+  currentPeriodEnd       DateTime? @map("current_period_end")
+  cancelAtPeriodEnd      Boolean   @default(false) @map("cancel_at_period_end")
+  trialEnd               DateTime? @map("trial_end")
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
+  user                   User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+model BrokerConnection {
+  id             String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String          @map("user_id") @db.Uuid
+  accountId      String?         @map("account_id") @db.Uuid
+  broker         String          @db.VarChar(100)
+  connectionType String          @map("connection_type") @db.VarChar(50)
+  status         String          @default("active") @db.VarChar(50)
+  lastSyncAt     DateTime?       @map("last_sync_at")
+  nextSyncAt     DateTime?       @map("next_sync_at")
+  encryptedCreds String?         @map("encrypted_creds")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+  account        TradingAccount? @relation(fields: [accountId], references: [id])
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("broker_connections")
+}
+
+model ImportLog {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String   @map("user_id") @db.Uuid
+  broker        String?  @db.VarChar(100)
+  fileName      String?  @map("file_name") @db.VarChar(255)
+  totalRows     Int      @map("total_rows")
+  importedCount Int      @map("imported_count")
+  skippedCount  Int      @default(0) @map("skipped_count")
+  errorCount    Int      @default(0) @map("error_count")
+  errors        Json?
+  status        String   @default("completed") @db.VarChar(50)
+  createdAt     DateTime @default(now()) @map("created_at")
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("import_logs")
+}
+
+model UserSettings {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId              String   @unique @map("user_id") @db.Uuid
+  emailWeeklyReport   Boolean  @default(true) @map("email_weekly_report")
+  emailTradeReminders Boolean  @default(false) @map("email_trade_reminders")
+  emailMarketing      Boolean  @default(true) @map("email_marketing")
+  defaultAccountId    String?  @map("default_account_id") @db.Uuid
+  defaultDateRange    String   @default("30d") @map("default_date_range") @db.VarChar(10)
+  showCommissions     Boolean  @default(true) @map("show_commissions")
+  rMultipleGoal       Decimal? @map("r_multiple_goal") @db.Decimal(5, 2)
+  dailyLossLimitAlert Decimal? @map("daily_loss_limit_alert") @db.Decimal(18, 2)
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
+}
+
+model ProgressGoal {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  type      String   @db.VarChar(50)
+  target    Decimal  @db.Decimal(18, 4)
+  current   Decimal  @default(0) @db.Decimal(18, 4)
+  period    String   @db.VarChar(20)
+  startDate DateTime @map("start_date") @db.Date
+  endDate   DateTime @map("end_date") @db.Date
+  achieved  Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, achieved])
+  @@map("progress_goals")
+}
+
+model BacktestSession {
+  id          String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String          @map("user_id") @db.Uuid
+  playbookId  String?         @map("playbook_id") @db.Uuid
+  name        String          @db.VarChar(255)
+  description String?
+  symbol      String?         @db.VarChar(50)
+  timeframe   String?         @db.VarChar(20)
+  totalTrades Int             @default(0) @map("total_trades")
+  winRate     Decimal?        @map("win_rate") @db.Decimal(5, 2)
+  netPnl      Decimal?        @map("net_pnl") @db.Decimal(18, 2)
+  returnPct   Decimal?        @map("return_pct") @db.Decimal(8, 2)
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+  playbook    Playbook?       @relation(fields: [playbookId], references: [id])
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trades      BacktestTrade[]
+
+  @@index([userId])
+  @@map("backtest_sessions")
+}
+
+model BacktestTrade {
+  id         String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sessionId  String          @map("session_id") @db.Uuid
+  symbol     String          @db.VarChar(50)
+  direction  TradeDirection
+  entryPrice Decimal         @map("entry_price") @db.Decimal(18, 8)
+  exitPrice  Decimal         @map("exit_price") @db.Decimal(18, 8)
+  quantity   Decimal?        @db.Decimal(18, 8)
+  pnl        Decimal         @db.Decimal(18, 2)
+  pnlPct     Decimal?        @map("pnl_pct") @db.Decimal(8, 2)
+  notes      String?
+  createdAt  DateTime        @default(now()) @map("created_at")
+  session    BacktestSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@map("backtest_trades")
+}
+
+enum SubscriptionTier {
+  free
+  pro
+  elite
+}
+
+enum TradingExperience {
+  beginner
+  intermediate
+  advanced
+  professional
+}
+
+enum PrimaryAssetClass {
+  stocks
+  forex
+  crypto
+  futures
+  options
+  mixed
+}
+
+enum AssetClass {
+  stocks
+  forex
+  crypto
+  futures
+  options
+  cfd
+  other
+}
+
+enum TradeDirection {
+  long
+  short
+}
+
+enum TradeStatus {
+  open
+  closed
+  partial
+}
+
+enum EmotionalState {
+  calm
+  anxious
+  confident
+  fearful
+  greedy
+  neutral
+}
+
+enum MarketSession {
+  asian
+  london
+  new_york
+  overlap
+  after_hours
+}
+
+enum AccountType {
+  live
+  demo
+  prop_firm
+  paper
+}
+
+enum TradingStyle {
+  scalper
+  day_trader
+  swing_trader
+  position_trader
+}
+
+enum InsightType {
+  behavioral
+  pattern
+  weekly_report
+  coach_chat
+  trade_analysis
+}
