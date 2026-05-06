@@ -3,6 +3,10 @@ import { ApiError } from '../../utils/ApiError.js'
 import { calculatePnL, detectSession, getDayOfWeek } from './pnl.service.js'
 import type { CreateTradeInput, UpdateTradeInput, ListTradesQuery } from '../../validations/trade.validation.js'
 import type { Prisma } from '@prisma/client'
+import { notifyUser } from '../websocket.service.js'
+import { cloudinary } from '../../config/cloudinary.js'
+import Papa from 'papaparse'
+
 
 export async function listTrades(userId: string, query: ListTradesQuery) {
   const {
@@ -167,6 +171,8 @@ export async function createTrade(userId: string, input: CreateTradeInput) {
     },
   })
 
+  notifyUser(userId, 'TRADE_UPDATED', { tradeId: trade.id, action: 'create' })
+
   return trade
 }
 
@@ -220,6 +226,8 @@ export async function updateTrade(tradeId: string, userId: string, input: Update
     },
   })
 
+  notifyUser(userId, 'TRADE_UPDATED', { tradeId: trade.id, action: 'update' })
+
   return trade
 }
 
@@ -234,4 +242,55 @@ export async function deleteTrade(tradeId: string, userId: string) {
     where: { id: tradeId },
     data: { deletedAt: new Date() },
   })
+
+  notifyUser(userId, 'TRADE_UPDATED', { tradeId, action: 'delete' })
+}
+
+export async function uploadScreenshot(tradeId: string, userId: string, file: Express.Multer.File) {
+  const trade = await prisma.trade.findFirst({ where: { id: tradeId, userId } })
+  if (!trade) throw ApiError.notFound('Trade')
+
+  // Upload to Cloudinary
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      { folder: `trades/${userId}/${tradeId}` },
+      async (error, result) => {
+        if (error) return reject(error)
+        if (!result) return reject(new Error('Upload failed'))
+
+        const screenshot = await prisma.tradeScreenshot.create({
+          data: {
+            tradeId,
+            url: result.secure_url,
+            publicId: result.public_id,
+          }
+        })
+        resolve(screenshot)
+      }
+    )
+    uploadStream.end(file.buffer)
+  })
+}
+
+export async function exportTrades(userId: string, format: 'csv' | 'json' = 'csv') {
+  const trades = await prisma.trade.findMany({
+    where: { userId, deletedAt: null },
+    include: {
+      tags: { include: { tag: true } },
+    }
+  })
+
+  if (format === 'json') return JSON.stringify(trades, null, 2)
+
+  const data = trades.map(t => ({
+    Symbol: t.symbol,
+    Direction: t.direction,
+    Entry: t.entryPrice.toString(),
+    Exit: t.exitPrice?.toString() || '',
+    PnL: t.netPnl?.toString() || '0',
+    Date: t.entryDate.toISOString(),
+    Tags: t.tags.map(tag => tag.tag.name).join(', '),
+  }))
+
+  return Papa.unparse(data)
 }

@@ -15,11 +15,14 @@ export const authenticate = async (
   next: NextFunction
 ): Promise<void> => {
   const authHeader = req.headers.authorization
-  if (!authHeader?.startsWith('Bearer ')) {
-    return next(ApiError.unauthorized())
+  let token: string | undefined
+
+  if (authHeader?.startsWith('Bearer ')) {
+    token = authHeader.split(' ')[1]
+  } else if (req.cookies?.accessToken) {
+    token = req.cookies.accessToken
   }
 
-  const token = authHeader.split(' ')[1]
   if (!token) return next(ApiError.unauthorized())
 
   try {

@@ -4,12 +4,32 @@ const prisma = new PrismaClient();
 
 export class AnalyticsService {
   async getOverview(userId: string) {
-    const trades = await prisma.trade.findMany({
-      where: { userId, status: TradeStatus.closed },
-      orderBy: { exitDate: 'asc' },
-    });
+    const [stats, winsStats, lossesStats, recentTrades] = await Promise.all([
+      prisma.trade.aggregate({
+        where: { userId, status: TradeStatus.closed },
+        _count: { id: true },
+        _sum: { netPnl: true },
+      }),
+      prisma.trade.aggregate({
+        where: { userId, status: TradeStatus.closed, netPnl: { gt: 0 } },
+        _count: { id: true },
+        _sum: { netPnl: true },
+      }),
+      prisma.trade.aggregate({
+        where: { userId, status: TradeStatus.closed, netPnl: { lte: 0 } },
+        _count: { id: true },
+        _sum: { netPnl: true },
+      }),
+      prisma.trade.findMany({
+        where: { userId, status: TradeStatus.closed },
+        orderBy: { exitDate: 'desc' },
+        take: 5,
+        select: { symbol: true, netPnl: true, exitDate: true },
+      }),
+    ]);
 
-    if (trades.length === 0) {
+    const totalTrades = stats._count.id;
+    if (totalTrades === 0) {
       return {
         totalTrades: 0,
         winRate: 0,
@@ -17,30 +37,24 @@ export class AnalyticsService {
         profitFactor: 0,
         avgWin: 0,
         avgLoss: 0,
+        recentTrades: [],
       };
     }
 
-    const wins = trades.filter(t => Number(t.netPnl || 0) > 0);
-    const losses = trades.filter(t => Number(t.netPnl || 0) <= 0);
+    const totalNetPnl = Number(stats._sum.netPnl || 0);
+    const grossProfit = Number(winsStats._sum.netPnl || 0);
+    const grossLoss = Math.abs(Number(lossesStats._sum.netPnl || 0));
 
-    const totalNetPnl = trades.reduce((sum, t) => sum + (Number(t.netPnl) || 0), 0);
-    const grossProfit = wins.reduce((sum, t) => sum + (Number(t.netPnl) || 0), 0);
-    const grossLoss = Math.abs(losses.reduce((sum, t) => sum + (Number(t.netPnl) || 0), 0));
-
-    const winRate = (wins.length / trades.length) * 100;
+    const winRate = (winsStats._count.id / totalTrades) * 100;
     const profitFactor = grossLoss === 0 ? grossProfit : grossProfit / grossLoss;
 
-    const recentTrades = [...trades].sort((a, b) => 
-      new Date(b.exitDate!).getTime() - new Date(a.exitDate!).getTime()
-    ).slice(0, 5);
-
     return {
-      totalTrades: trades.length,
+      totalTrades,
       winRate: Math.round(winRate * 100) / 100,
       totalNetPnl: Math.round(totalNetPnl * 100) / 100,
       profitFactor: Math.round(profitFactor * 100) / 100,
-      avgWin: wins.length > 0 ? Math.round((grossProfit / wins.length) * 100) / 100 : 0,
-      avgLoss: losses.length > 0 ? Math.round((grossLoss / losses.length) * 100) / 100 : 0,
+      avgWin: winsStats._count.id > 0 ? Math.round((grossProfit / winsStats._count.id) * 100) / 100 : 0,
+      avgLoss: lossesStats._count.id > 0 ? Math.round((grossLoss / lossesStats._count.id) * 100) / 100 : 0,
       recentTrades: recentTrades.map(t => ({
         symbol: t.symbol,
         netPnl: Number(t.netPnl),

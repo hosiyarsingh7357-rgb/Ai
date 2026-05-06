@@ -7,7 +7,7 @@ const fileFilter = (_req: any, file: Express.Multer.File, cb: multer.FileFilterC
   if (file.mimetype.startsWith('image/')) {
     cb(null, true)
   } else {
-    cb(new ApiError(400, 'Only images are allowed') as any, false)
+    cb(new ApiError(400, 'INVALID_FILE', 'Only images are allowed') as any, false)
   }
 }
 
