@@ -23,8 +23,6 @@ import { Input } from '@/components/ui/Input'
 import { Card, CardBody } from '@/components/ui/Card'
 import { cn } from '@/lib/utils'
 import { apiClient } from '@/lib/apiClient'
-import { offlineStorage } from '@/lib/offlineStorage'
-import { v4 as uuidv4 } from 'uuid'
 
 const tradeSchema = z.object({
   symbol: z.string().min(1, 'Symbol is required').toUpperCase(),
@@ -128,8 +126,7 @@ export function TradeForm({ onSuccess }: { onSuccess?: () => void }) {
     })
   }, [setValue])
 
-  // Save draft on change
-  const formValues = watch()
+  // Auto-save draft moved to a single effect
   useEffect(() => {
     const saveDraft = async () => {
       if (!formValues.symbol && !formValues.entryPrice) return
