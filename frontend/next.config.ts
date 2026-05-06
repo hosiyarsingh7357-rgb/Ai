@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import withBundleAnalyzer from '@next/bundle-analyzer';
+import path from 'path';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -40,6 +41,9 @@ const nextConfig: NextConfig = {
         ],
       },
     ];
+  },
+  turbopack: {
+    root: path.resolve(__dirname, '..'),
   },
 };
 
