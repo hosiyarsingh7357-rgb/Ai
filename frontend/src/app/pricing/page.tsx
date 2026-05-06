@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { motion } from 'framer-motion'
+import { m } from 'framer-motion'
 import { Check, Shield, Zap, Crown, ArrowRight } from 'lucide-react'
 import { Card, CardBody, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -132,26 +132,26 @@ export default function PricingPage() {
     <div className="min-h-screen bg-background py-20 px-4">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
-          <motion.h1 
+          <m.h1 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="text-4xl md:text-6xl font-bold mb-4 bg-gradient-to-r from-foreground to-foreground/50 bg-clip-text text-transparent"
           >
             Level Up Your Trading
-          </motion.h1>
-          <motion.p 
+          </m.h1>
+          <m.p 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
             className="text-xl text-muted-foreground max-w-2xl mx-auto"
           >
             Choose the plan that fits your growth. Unlock advanced AI analytics and unlimited journaling.
-          </motion.p>
+          </m.p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
           {tiers.map((tier, idx) => (
-            <motion.div
+            <m.div
               key={tier.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -215,7 +215,7 @@ export default function PricingPage() {
                   </Button>
                 </CardBody>
               </Card>
-            </motion.div>
+            </m.div>
           ))}
         </div>
 

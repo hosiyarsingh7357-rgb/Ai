@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { motion } from 'framer-motion'
+import { m } from 'framer-motion'
 import { BookOpen, Star, User, Clock, ChevronRight, Search } from 'lucide-react'
 import { Card, CardBody } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -56,7 +56,7 @@ export default function PublicPlaybooksPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {playbooks?.map((playbook, idx) => (
-            <motion.div
+            <m.div
               key={playbook.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -102,7 +102,7 @@ export default function PublicPlaybooksPage() {
                   </div>
                 </CardBody>
               </Card>
-            </motion.div>
+            </m.div>
           ))}
         </div>
       )}

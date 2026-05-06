@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { motion, AnimatePresence } from 'framer-motion'
+import { m, AnimatePresence } from 'framer-motion'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -137,7 +137,7 @@ export default function OnboardingPage() {
         <form onSubmit={handleSubmit(onSubmit)}>
           <AnimatePresence mode="wait">
             {step === 1 && (
-              <motion.div
+              <m.div
                 key="step1"
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -228,11 +228,11 @@ export default function OnboardingPage() {
                     Continue <ChevronRight size={18} />
                   </Button>
                 </div>
-              </motion.div>
+              </m.div>
             )}
 
             {step === 2 && (
-              <motion.div
+              <m.div
                 key="step2"
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -297,11 +297,11 @@ export default function OnboardingPage() {
                     Review Profile <ChevronRight size={18} />
                   </Button>
                 </div>
-              </motion.div>
+              </m.div>
             )}
 
             {step === 3 && (
-              <motion.div
+              <m.div
                 key="step3"
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -350,7 +350,7 @@ export default function OnboardingPage() {
                     <p className="text-[#94A3B8] mt-2">Setting up your behavioral analysis engine...</p>
                   </div>
                 )}
-              </motion.div>
+              </m.div>
             )}
           </AnimatePresence>
         </form>

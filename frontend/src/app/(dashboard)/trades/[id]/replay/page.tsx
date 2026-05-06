@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useTradeReplay } from '@/hooks/useTradeReplay';
 import { ReplayChart } from '@/components/analytics/ReplayChart';
 import { FeatureGate } from '@/components/auth/FeatureGate';
-import { motion, AnimatePresence } from 'framer-motion';
+import { m, AnimatePresence } from 'framer-motion';
 import { 
   Play, 
   Pause, 
@@ -40,7 +40,7 @@ export default function TradeReplayPage() {
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <div className="relative w-16 h-16">
           <div className="absolute inset-0 border-4 border-emerald-500/20 rounded-full" />
-          <motion.div 
+          <m.div 
             className="absolute inset-0 border-4 border-emerald-500 rounded-full border-t-transparent"
             animate={{ rotate: 360 }}
             transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
@@ -161,7 +161,7 @@ export default function TradeReplayPage() {
             <div className="space-y-4 max-h-[700px] overflow-y-auto pr-2 custom-scrollbar">
               <AnimatePresence mode="popLayout">
                 {[...activeInsights].reverse().map((insight, idx) => (
-                  <motion.div
+                  <m.div
                     key={insight.timestamp + insight.type}
                     initial={{ opacity: 0, x: 20, y: 10 }}
                     animate={{ opacity: 1, x: 0, y: 0 }}
@@ -191,7 +191,7 @@ export default function TradeReplayPage() {
                         </p>
                       </div>
                     </div>
-                  </motion.div>
+                  </m.div>
                 ))}
               </AnimatePresence>
               
