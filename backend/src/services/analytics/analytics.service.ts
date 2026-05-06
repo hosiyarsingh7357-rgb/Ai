@@ -30,11 +30,9 @@ export class AnalyticsService {
     const winRate = (wins.length / trades.length) * 100;
     const profitFactor = grossLoss === 0 ? grossProfit : grossProfit / grossLoss;
 
-    const recentTrades = await prisma.trade.findMany({
-      where: { userId, status: TradeStatus.closed },
-      orderBy: { exitDate: 'desc' },
-      take: 5,
-    });
+    const recentTrades = [...trades].sort((a, b) => 
+      new Date(b.exitDate!).getTime() - new Date(a.exitDate!).getTime()
+    ).slice(0, 5);
 
     return {
       totalTrades: trades.length,

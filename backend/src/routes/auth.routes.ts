@@ -9,13 +9,15 @@ import {
   onboardingSchema,
 } from '../validations/auth.validation.js'
 
+import { loginRateLimiter } from '../middleware/rateLimiter.middleware.js'
+
 const router = Router()
 
 // POST /v1/auth/register
-router.post('/register', validate(registerSchema), authController.register)
+router.post('/register', loginRateLimiter, validate(registerSchema), authController.register)
 
 // POST /v1/auth/login
-router.post('/login', validate(loginSchema), authController.login)
+router.post('/login', loginRateLimiter, validate(loginSchema), authController.login)
 
 // POST /v1/auth/refresh
 router.post('/refresh', validate(refreshTokenSchema), authController.refresh)

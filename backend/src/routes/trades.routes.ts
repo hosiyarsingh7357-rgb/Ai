@@ -10,7 +10,20 @@ import {
 } from '../validations/trade.validation.js'
 import multer from 'multer'
 
-const upload = multer({ storage: multer.memoryStorage() })
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+  fileFilter: (_req, file, cb) => {
+    const allowedMimeTypes = ['text/csv', 'application/json', 'text/plain']
+    if (allowedMimeTypes.includes(file.mimetype)) {
+      cb(null, true)
+    } else {
+      cb(new Error('Invalid file type. Only CSV and JSON are allowed.') as any, false)
+    }
+  }
+})
 const router = Router()
 
 // All trade routes require authentication
