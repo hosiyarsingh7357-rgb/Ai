@@ -16,11 +16,11 @@ const upload = multer({
     fileSize: 5 * 1024 * 1024, // 5MB limit
   },
   fileFilter: (_req, file, cb) => {
-    const allowedMimeTypes = ['text/csv', 'application/json', 'text/plain']
+    const allowedMimeTypes = ['text/csv', 'application/json', 'text/plain', 'image/jpeg', 'image/png', 'image/webp']
     if (allowedMimeTypes.includes(file.mimetype)) {
       cb(null, true)
     } else {
-      cb(new Error('Invalid file type. Only CSV and JSON are allowed.') as any, false)
+      cb(new Error('Invalid file type. Only CSV, JSON, and Images (JPG/PNG/WEBP) are allowed.') as any, false)
     }
   }
 })
@@ -28,6 +28,9 @@ const router = Router()
 
 // All trade routes require authentication
 router.use(authenticate)
+
+// GET /v1/trades/export — Export trades
+router.get('/export', tradesController.exportTrades)
 
 // GET /v1/trades — List trades (paginated + filtered)
 router.get('/', validate(listTradesQuerySchema, 'query'), tradesController.listTrades)
@@ -40,6 +43,9 @@ router.post('/bulk-import', upload.single('file'), importTrades)
 
 // POST /v1/trades/bulk-import-preview — Preview import data
 router.post('/bulk-import-preview', upload.single('file'), previewImport)
+
+// POST /v1/trades/:id/screenshot — Upload screenshot for trade
+router.post('/:id/screenshot', upload.single('screenshot'), tradesController.uploadScreenshot)
 
 // GET /v1/trades/:id — Get trade detail
 router.get('/:id', tradesController.getTrade)

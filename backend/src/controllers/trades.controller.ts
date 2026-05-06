@@ -46,3 +46,26 @@ export const deleteTrade = asyncHandler(async (req: Request, res: Response) => {
   
   ApiResponse.noContent(res)
 })
+
+export const uploadScreenshot = asyncHandler(async (req: Request, res: Response) => {
+  const userId = (req as AuthRequest).user.id
+  if (!req.file) throw new Error('No file uploaded')
+  
+  const screenshot = await tradesService.uploadScreenshot(req.params['id']!, userId, req.file)
+  ApiResponse.success(res, screenshot)
+})
+
+export const exportTrades = asyncHandler(async (req: Request, res: Response) => {
+  const userId = (req as AuthRequest).user.id
+  const format = (req.query['format'] as 'csv' | 'json') || 'csv'
+  
+  const data = await tradesService.exportTrades(userId, format)
+  
+  if (format === 'csv') {
+    res.setHeader('Content-Type', 'text/csv')
+    res.setHeader('Content-Disposition', `attachment; filename=trades_export_${new Date().getTime()}.csv`)
+    res.send(data)
+  } else {
+    res.json({ status: 'success', data: JSON.parse(data) })
+  }
+})
