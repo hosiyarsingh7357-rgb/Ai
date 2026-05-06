@@ -3,7 +3,8 @@ import { env } from './config/environment.js'
 import prisma from './config/database.js'
 import { connectRedis } from './config/redis.js'
 import { logger } from './utils/logger.js'
-import { initWeeklyReportJob } from './jobs/weeklyReport.job'
+import { initWeeklyReportJob } from './jobs/weeklyReport.job.js'
+import { initWebSocket } from './services/websocket.service.js'
 
 async function bootstrap() {
   // Validate DB connection
@@ -32,6 +33,9 @@ async function bootstrap() {
       `🚀 API server running at ${env.API_URL}`
     )
   })
+
+  // Initialize WebSocket
+  initWebSocket(server)
 
   // ─── Graceful Shutdown ──────────────────────────────────────────────────────
   const shutdown = async (signal: string) => {

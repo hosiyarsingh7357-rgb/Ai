@@ -6,12 +6,14 @@ import { env } from './config/environment.js'
 import { requestLogger } from './middleware/requestLogger.middleware.js'
 import { errorHandler } from './middleware/errorHandler.middleware.js'
 import apiRouter from './routes/index.js'
+import { apiRateLimiter } from './middleware/rateLimiter.middleware.js'
 
 export function createApp() {
   const app = express()
 
   // ─── Security ────────────────────────────────────────────────────────────────
   app.use(helmet())
+  app.use(apiRateLimiter)
   app.use(
     cors({
       origin: [env.FRONTEND_URL],
