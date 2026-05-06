@@ -4,13 +4,13 @@ import { useRouter, usePathname } from 'next/navigation'
 import { useAuthStore } from '@/store/auth.store'
 
 export function useRequireAuth() {
-  const { user, accessToken } = useAuthStore()
+  const { user } = useAuthStore()
   const router = useRouter()
   const pathname = usePathname()
 
   useEffect(() => {
-    // If no token and not on login/signup, redirect to login
-    if (!accessToken && !['/login', '/signup'].includes(pathname)) {
+    // If no user and not on login/signup, redirect to login
+    if (!user && !['/login', '/signup'].includes(pathname)) {
       router.push('/login')
     }
     
@@ -18,7 +18,7 @@ export function useRequireAuth() {
     if (user && !user.onboardingCompleted && pathname !== '/onboarding' && !['/login', '/signup'].includes(pathname)) {
       router.push('/onboarding')
     }
-  }, [accessToken, user, pathname, router])
+  }, [user, pathname, router])
 
   return { user, isLoading: false }
 }

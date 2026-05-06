@@ -45,8 +45,8 @@ export default function SignupPage() {
         password: data.password,
       })
       
-      const { user, accessToken, refreshToken } = res.data.data
-      setAuth(user, accessToken, refreshToken)
+      const { user } = res.data.data
+      setAuth(user)
       
       // 2. Redirect to onboarding
       router.push('/onboarding')

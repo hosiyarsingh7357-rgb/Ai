@@ -33,8 +33,8 @@ export default function LoginPage() {
     setApiError('')
     try {
       const res = await apiClient.post('/auth/login', data)
-      const { user, accessToken, refreshToken } = res.data.data
-      setAuth(user, accessToken, refreshToken)
+      const { user } = res.data.data
+      setAuth(user)
       router.push('/dashboard')
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: { message?: string } } } })

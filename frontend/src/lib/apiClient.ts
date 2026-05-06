@@ -43,18 +43,13 @@ apiClient.interceptors.response.use(
       isRefreshing = true
 
       try {
-        const refreshResponse = await axios.post(
+        await axios.post(
           `${API_BASE_URL}/auth/refresh`,
           {},
           { withCredentials: true }
         )
         
-        const { accessToken } = refreshResponse.data
-        
-        // Update Cookies
-        Cookies.set('access_token', accessToken, { expires: 7, sameSite: 'strict' })
-        
-        processQueue(null, accessToken)
+        processQueue(null)
         return apiClient(originalRequest)
       } catch (refreshError) {
         processQueue(refreshError, null)
