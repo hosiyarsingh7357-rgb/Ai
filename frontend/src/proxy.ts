@@ -6,7 +6,7 @@ const protectedRoutes = ['/dashboard', '/trades', '/analytics', '/playbooks', '/
 // Routes that are only for guests
 const guestRoutes = ['/login', '/signup', '/pricing']
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
   
   // We use cookies for tokens to enable server-side auth checks in middleware
